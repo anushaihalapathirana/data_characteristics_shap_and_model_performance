@@ -30,9 +30,9 @@ tf.compat.v1.logging.set_verbosity(tf.compat.v1.logging.ERROR)
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
-from constants import TRAIN_SIZE_ARR, ALGO_LIST, DATA_FILE_PATH, SHAP_IMBALANCE_BACKGROUND_DATA_BOX_PLOT, \
+from src.constants import TRAIN_SIZE_ARR, ALGO_LIST, DATA_FILE_PATH, SHAP_IMBALANCE_BACKGROUND_DATA_BOX_PLOT, \
         SHAP_BALANCE_BACKGROUND_DATA_UMAP, SHAP_BALANCE_BACKGROUND_DATA_BOX_PLOT, SHAP_IMBALANCE_BACKGROUND_DATA_UMAP
-from helpers import imputation, print_data_shapes, get_shap_values, get_test_data, get_perc_of_train_data,\
+from src.helpers import imputation, print_data_shapes, get_shap_values, get_test_data, get_perc_of_train_data,\
         plot_global, plot_dependency, scoring_function, overall, plot_shap_box_plots, plot_shap_bar_plots, \
         plot_combined_graphs
 
