@@ -1,7 +1,9 @@
 import numpy as np
 import pandas as pd
 import shap
-from sklearn.feature_selection import SelectKBest, mutual_info_classif
+import matplotlib.pyplot as plt
+import seaborn as sns
+from sklearn.feature_selection import SelectKBest
 from sklearn.impute import SimpleImputer
 from sklearn.metrics import confusion_matrix, f1_score, cohen_kappa_score
 from sklearn.metrics import accuracy_score, balanced_accuracy_score
@@ -10,9 +12,8 @@ from synthpop import Synthpop
 from imblearn.over_sampling import SMOTE
 from imblearn.over_sampling import ADASYN
 from pdpbox import pdp
-import matplotlib.pyplot as plt
-import seaborn as sns
-
+from sklearn.manifold import TSNE
+import plotly.express as px
 
 def select_features(select, method, feature):
     """This function use SelectKBest method to select features from preprocessed dataset
@@ -530,3 +531,40 @@ def plot_combined_graphs(models, df_fi, saveFile, myfeatures, custom_colors, isc
 
     plt.savefig(saveFile, dpi=300, bbox_inches='tight')
     plt.show()
+    
+
+def plot_tsne(df, model, perplexity):
+    """function to plot t-SNE
+
+    Args:
+        df : data
+        model : trained model
+        perplexity : _description_
+    """
+    df1=df.loc[df['model'] == model]
+    
+    #if(case_no == 2):
+    #    features = df.iloc[:, 3:13].columns.values
+    #elif (case_no == 3):
+    #    features = df.iloc[:, 3:18].columns.values
+    #else:
+    #    features = ['Fasting plasma glucose', 'HbA1c 1 year before', 'HbA1c 2 years before', 'Other cardiac diseases',
+    #       'T2D duration in years']
+    features = ['Fasting plasma glucose', 'HbA1c 1 year before', 'HbA1c 2 years before', 'Other cardiac diseases',
+           'T2D duration in years']   
+    target = 'size'
+    X = df1[features].values
+    Y = df1[target].values
+
+    tsne = TSNE(n_components=2, n_iter = 5000, perplexity=perplexity, random_state=42)
+    X_tsne = tsne.fit_transform(X)
+    tsne.kl_divergence_
+
+    fig = px.scatter(x=X_tsne[:, 1], y=X_tsne[:, 0], color=Y, color_continuous_scale=px.colors.diverging.RdYlGn)
+
+    fig.update_layout(
+        title= model + " TSNE visualization of training size and features",
+        xaxis_title="First t-SNE",
+        yaxis_title="Second t-SNE",
+    )
+    fig.show()

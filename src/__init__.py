@@ -34,7 +34,7 @@ from src.constants import TRAIN_SIZE_ARR, ALGO_LIST, DATA_FILE_PATH, SHAP_IMBALA
         SHAP_BALANCE_BACKGROUND_DATA_UMAP, SHAP_BALANCE_BACKGROUND_DATA_BOX_PLOT, SHAP_IMBALANCE_BACKGROUND_DATA_UMAP
 from src.helpers import imputation, print_data_shapes, get_shap_values, get_test_data, get_perc_of_train_data,\
         plot_global, plot_dependency, scoring_function, overall, plot_shap_box_plots, plot_shap_bar_plots, \
-        plot_combined_graphs
+        plot_combined_graphs, plot_tsne
 
 class BaseTrainer:
     
@@ -768,6 +768,10 @@ class BaseTrainer:
         variances = data.groupby(['size', 'features'])['value'].var()
         print("Variances for each group:")
         print(variances)
+    
+    def get_tsne_plot(self, df, perplexity):
+        for i, val in enumerate(ALGO_LIST):
+            plot_tsne(df, val, perplexity)
         
 if __name__ == "__main__":
     print("Initiate model...")
@@ -790,6 +794,7 @@ if __name__ == "__main__":
     baseT.plot_together(data, df, fi_list, myfeatures, baseT.fig_balance_box_plot_save_path)
     X = baseT.plot_umap_for_models(ALGO_LIST, df, baseT.fig_balance_umap_save_path)
     baseT.calculate_varience(df, myfeatures)
+    baseT.get_tsne_plot(df, 5)
     
     # Train models with imbalanced data. 
     # To train models with original (imbalaned) data, change method name in baseT.display_results to ''. 
@@ -809,6 +814,7 @@ if __name__ == "__main__":
     baseT_imbalance.plot_together(data, df, fi_list, myfeatures, baseT_imbalance.fig_imbalance_box_plot_save_path)
     X = baseT_imbalance.plot_umap_for_models(ALGO_LIST, df, baseT_imbalance.fig_imbalance_umap_save_path)
     baseT_imbalance.calculate_varience(df, myfeatures)
+    baseT_imbalance.get_tsne_plot(df, 5)
     
     
     
