@@ -143,6 +143,11 @@ class BaseTrainer:
         self.sample = [1337,3,2,0,89]
     
     def feature_selection(self):
+        """method to combine features. Not used in this experiment, since we only focus on clinical predictors
+
+        Returns:
+            include: combined feature list
+        """
         SES_factors = np.append(self.ratio_val, self.original_val)
         include= {}
         ## ==== For feature selection ==== ##
@@ -155,7 +160,21 @@ class BaseTrainer:
         return include
 
     def preprocess_data(self, filename, response_col, exclude_cols, include_features, include, which, perc, impute):
-        
+        """methods to preprocess data
+
+        Args:
+            filename : datafile name
+            response_col : response column name
+            exclude_cols : list of columns to exclude
+            include_features : list of features to include
+            include 
+            which :  0 for 1 vs 2, 1 for 3 vs rest, 2 for c3 (1+2+3 vs 4), else/3 for exact import
+            perc : if a feature is missing 'perc' or more than 'perc' percent of data --> drop the features
+            impute : data imputaion or not.  do imputation = 1 
+
+        Returns:
+            X, y : preprocessed data
+        """
         # Load the dataset as a pandas DataFrame
         data =  pd.read_csv(filename ,sep = ';',decimal = ',', encoding = 'unicode_escape', engine ='python')
 
@@ -209,6 +228,8 @@ class BaseTrainer:
     
 
     def get_preprocess_data(self):
+        """method to get preprocessed data
+        """
         which = 1 # 0 for 1 vs 2, 1 for 3 vs rest, 2 for c3 (1+2+3 vs 4), else/3 for exact import
         perc = 40 # if a feature is missing 'perc' or more than 'perc' percent of data --> drop the features
         include_features = 1 # use only include features = 1 (only usefull for all, All predictors model = 0)
@@ -228,6 +249,20 @@ class BaseTrainer:
     
     def shapley_feature_ranking(self, model, X_train, X_val, size, cv_loop, name,\
                                 is_check_additivity_false=False, featurenames = []):
+        """method to get shap values, NN handled differently
+
+        Args:
+            model 
+            X_train 
+            X_val 
+            size 
+            cv_loop 
+            name 
+            featurenames (list, optional): feature list. Defaults to [].
+
+        Returns:
+            sv : shap values 
+        """
         isnn = False
         if name=='nn':
             isnn = True
@@ -240,6 +275,17 @@ class BaseTrainer:
         return self.sv 
 
     def get_feat_importance(self, model, size, cv_loop, name):
+        """method to calculate feature importance
+
+        Args:
+            model 
+            size 
+            cv_loop 
+            name 
+
+        Returns:
+            fi : feature importance
+        """
         if name == 'lda':
             feature_imp = model.coef_[0]
         elif name == 'nn':
@@ -251,7 +297,16 @@ class BaseTrainer:
         return self.fi
     
     def train_test(self, data, m, sample, method, train_size = 25):
-    
+        """methods to cross valudation, train models and claculate model performance, shap values and 
+        feature importance for different data characteristics.
+
+        Args:
+            data 
+            m
+            sample
+            method 
+            train_size (int, optional): size of the train data. Defaults to 25.
+        """
         train_data, test_data = get_test_data(data, n_samples = 500)
     #     train_data = perc_of_original_train_data(train_data, use_perc=100)
         # use that 10% data to generate new data
@@ -510,7 +565,15 @@ class BaseTrainer:
         return results, results_var, myfeatures, sv_list, fi_list
 
     def display_results(self, data, sample, algo_list, train_size_arr, method):
-        
+        """method to generate results for every size of data in TRAIN_SIZE_ARR
+
+        Args:
+            data 
+            sample 
+            algo_list 
+            train_size_arr 
+            method 
+        """
         for t in train_size_arr:
             for i in range(1):
                 if(self.case_no == 2):
@@ -584,6 +647,13 @@ class BaseTrainer:
         return sv_list, fi_list, myfeatures
     
     def plot_data(self, sv_list, myfeatures):
+        """method to plot box and bar plots for every data characteristics
+
+        Args:
+            sv_list : shap value list
+            myfeatures : feature list
+
+        """
         data ={}
         df = pd.DataFrame(sv_list).T.reset_index()
         
@@ -604,6 +674,15 @@ class BaseTrainer:
         return data, df
     
     def plot_together(self, data, df, fi_list, myfeatures, file_name):
+        """method to plot bar and box plots together
+
+        Args:
+            data
+            df
+            fi_list : feature important list
+            myfeatures : feature list
+            file_name : figure name
+        """
         plt.rcParams['font.family'] = 'serif'
         plt.rcParams['font.size'] = 18
         custom_colors = ['#1f77b4', '#ff7f0e', '#2ca02c', '#d62728', '#9467bd']
@@ -618,6 +697,14 @@ class BaseTrainer:
 
 
     def plot_umap_for_models(self, models_list, df, saveFile):
+        """Calculate and plot umap
+
+        Args:
+            models_list : list of models
+            df : data
+            saveFile : figure name
+
+        """
         plt.rcParams['font.family'] = 'serif'
         colors = ['#1f77b4', '#ff7f0e', '#2ca02c']
         figsize = (18, 4)
@@ -670,6 +757,12 @@ class BaseTrainer:
         return df_model
 
     def calculate_varience(self, df, myfeatures):
+        """method to calculate variance 
+
+        Args:
+            df : data
+            myfeatures : feature list
+        """
         data = pd.melt(df, id_vars=['size'], value_vars=myfeatures, var_name='features')
 
         variances = data.groupby(['size', 'features'])['value'].var()
@@ -678,6 +771,9 @@ class BaseTrainer:
         
 if __name__ == "__main__":
     print("Initiate model...")
+    # Train models with balanced data. 
+    # To change the oversample method change method name in baseT.display_results. 
+    # available method names 'adasyn', 'smote' and 'synthpop'
     print('######## Models with balanced data #########')
     baseT = BaseTrainer()
     data, X, Y = baseT.get_preprocess_data()
@@ -695,6 +791,8 @@ if __name__ == "__main__":
     X = baseT.plot_umap_for_models(ALGO_LIST, df, baseT.fig_balance_umap_save_path)
     baseT.calculate_varience(df, myfeatures)
     
+    # Train models with imbalanced data. 
+    # To train models with original (imbalaned) data, change method name in baseT.display_results to ''. 
     print('######## Models with imbalanced data #########')
     baseT_imbalance = BaseTrainer()
     data, X, Y = baseT_imbalance.get_preprocess_data()

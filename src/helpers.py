@@ -15,12 +15,35 @@ import seaborn as sns
 
 
 def select_features(select, method, feature):
+    """This function use SelectKBest method to select features from preprocessed dataset
+
+    Args:
+        select: data
+        method: score function
+        feature: number of features to select
+
+    Returns:
+        _type_: _description_
+    """
     fs = SelectKBest(score_func=method, k=feature)
     selected = fs.fit_transform(select[0], select[1])
     idx = fs.get_support(indices=True)
     return selected, fs, idx
 
 def imputation(X_train, Y_train, X_test, Y_test, response_variable, t=False):
+    """Handle the data imputation
+
+    Args:
+        X_train: Training data
+        Y_train: Training data
+        X_test: Test data
+        Y_test: Test data
+        response_variable: Resoponse variable name
+        t (bool, optional): Defaults to False. Check to remove NA values from test dataset or not
+
+    Returns:
+        X_train, Y_train, X_test, Y_test: Imputed datasets
+    """
     Train = X_train.copy()
     Train.loc[:,response_variable] = Y_train
     
@@ -54,6 +77,16 @@ def imputation(X_train, Y_train, X_test, Y_test, response_variable, t=False):
     return X_train, Y_train, X_test, Y_test
 
 def conf_repo(true, probs, model):
+    """This handles the model performance matrices.
+
+    Args:
+        true : True values
+        probs : Predicted probabilities
+        model : Trained model
+    
+    Returns
+        eval_mat: evaluation matrices including AUC, f1 score and balance accuracy
+    """
     eval_mat = {}
     confusion_matrix_df = confusion_matrix(true, np.round(probs))
     print(confusion_matrix_df)
@@ -82,6 +115,16 @@ def conf_repo(true, probs, model):
     return eval_mat
 
 def overall(results, k, train_size, islda = False, isxgb = False, isnn = False):
+    """Handles the model evaluation for each model in the ALGO_LIST
+
+    Args:
+        results : dictionary to store data
+        k : Case number
+        train_size : Size of the training data
+        islda (bool, optional): LDA model is in the ALGO_LIST or not. Defaults to False.
+        isxgb (bool, optional): XGB model is in the ALGO_LIST or not. Defaults to False.
+        isnn (bool, optional): NN model is in the ALGO_LIST or not. Defaults to False.
+    """
     eval_mat = {}
     true, probs_LDA, probs_XGB, probs_NN = ([],)*4
 #     for i in range(splits):
@@ -102,6 +145,13 @@ def overall(results, k, train_size, islda = False, isxgb = False, isnn = False):
     return eval_mat
 
 def print_data_shapes(X, Y, response_variable):
+    """This function use to display shape of the data
+
+    Args:
+        X : data with input features
+        Y : response data
+        response_variable : name of the response variable
+    """
     data_ori = X
     out_ori = Y
 
@@ -112,6 +162,14 @@ def print_data_shapes(X, Y, response_variable):
     print('Response variable value count : ', dd[response_variable].value_counts())
     
 def get_data_types(data):
+    """Function to return data types
+
+    Args:
+        data
+
+    Returns:
+        converted dataframe
+    """
     dt = data.dtypes.to_dict()
     for k, v in dt.items():
         if v=='int64':
@@ -123,6 +181,13 @@ def get_data_types(data):
     return dt
 
 def create_artificial_data(data, percentage = 120, method = 'smote'):
+    """This function generate data samples using three different methods, smote, adasyn and synthpop.
+
+    Args:
+        data 
+        percentage (int, optional): percentage of size want to increate. Defaults to 120.
+        method (str, optional): oversampling method name. Defaults to 'smote'.
+    """
     no_samples = int(np.round(data.shape[0]*(percentage/100)))
     artificial_samples_count = no_samples
     response_col = 'c4'
@@ -164,13 +229,23 @@ def create_artificial_data(data, percentage = 120, method = 'smote'):
         X_res = result[result.columns.difference([response_col])]
         y_res = result[response_col]
     else:
-#         No artificial data
+        # No artificial data
         X_res = data[data.columns.difference([response_col])]
         y_res = data[response_col]
         
     return X_res, y_res
 
 def get_test_data(data, n_samples):
+    """Function to randomly pick n_samples number of test data
+
+    Args:
+        data 
+        n_samples : number of test samples
+
+    Returns:
+        result : dataset after removed the selected test data
+        test_data : selected test data
+    """
     result = pd.concat([data[0], data[1]], axis=1)
     test_data = result.sample(n=n_samples, random_state=1)
     idx_to_drop = result.sample(n=n_samples, random_state=1).index
@@ -188,11 +263,30 @@ def get_test_data(data, n_samples):
     return result, test_data
 
 def perc_of_original_train_data(data, use_perc):
-#     get 10% of original data
+    """select percetage of data
+
+    Args:
+        data 
+        use_perc : Percentage to select
+
+    Returns:
+        data : data after selecting the use_perc of original data
+    """
+    # get 10% of original data
     data = data.head(int(len(data)*(use_perc/100)))
     return data
 
 def get_perc_of_train_data(data, perc, method):
+    """function to select percentage of data, and oversample
+
+    Args:
+        data 
+        perc : percentage
+        method : oversampling method
+
+    Returns:
+        X_res, y_res : oversampled data
+    """
     data = data.drop_duplicates()
     if(perc > 100):
         X_res, y_res = create_artificial_data(data, percentage=perc, method = method)
@@ -204,6 +298,16 @@ def get_perc_of_train_data(data, perc, method):
     return X_res, y_res
 
 def get_shap_values(model,  X_train, X_val, is_check_additivity_false = False, isnn=False, featurenames=[]):
+    """Calculate the shap values. NN handle differently in this method
+
+    Args:
+        model : trained model
+        X_train : training data
+        X_val : validation data
+        is_check_additivity_false (bool, optional): check_additivity hyper parameter value. Defaults to False.
+        isnn (bool, optional): model is NN or not. Defaults to False.
+        featurenames (list, optional): list of selected feature names. Defaults to [].
+    """
     explainer = shap.Explainer(model, X_val)
     if isnn:
 #         explainer_N = shap.DeepExplainer(model, np.array(X_train)) #KernelExplainer #DeepExplainer
@@ -218,17 +322,36 @@ def get_shap_values(model,  X_train, X_val, is_check_additivity_false = False, i
         shap_values = explainer(X_val)
     return shap_values
 
-def plot_global(model, X_train, X_val, is_check_additivity_false = False, isnn=False, featurenames=[], islocal=False):
+def plot_global(model, X_train, X_val, is_check_additivity_false = False, \
+                isnn=False, featurenames=[], islocal=False):
+    """function to plot shap plots.
+
+    Args:
+        model 
+        X_train 
+        X_val 
+        is_check_additivity_false (bool, optional): check_additivity hyper parameter value. Defaults to False.
+        featurenames (list, optional): List of feature names. Defaults to [].
+        islocal (bool, optional): check plot is local or global. Defaults to False.
+    """
 
     shap_values = get_shap_values(model,  X_train, X_val, is_check_additivity_false, isnn, featurenames)
-#     shap.plots.bar(shap_values[0])
+    # shap.plots.bar(shap_values[0])
     shap.plots.beeswarm(shap_values)
     
     if islocal:
         shap.plots.force(shap_values[1], matplotlib=True)
-#         plt.savefig('force_plot.png')
+        # plt.savefig('force_plot.png')
 
 def plot_dependency(model, X_train, X_val, isxgb=False):
+    """function to plot dependency plot.
+
+    Args:
+        model 
+        X_train 
+        X_val 
+        isxgb (bool, optional): Defaults to False.
+    """
     feature_names=X_val.columns
     for i, feature_name in enumerate(feature_names):
 
@@ -245,11 +368,29 @@ def plot_dependency(model, X_train, X_val, isxgb=False):
         plt.show()
 
 def scoring_function(model, X, y):
+    """score function. This will use in NN, when calculating the permutation importance
+
+    Args:
+        model : NN model instance
+        X : data
+        y : Y
+
+    Returns:
+        score
+    """
     y_pred = model.predict(X)
     return np.sqrt(np.mean((y - y_pred) ** 2))
 
 
 def plot_shap_box_plots(df, title, myfeatures, iscv=False):
+    """function to plot box plots of mean absolute shap values
+
+    Args:
+        df 
+        title (sring): title of the plot
+        myfeatures : feature list
+        iscv (bool, optional): cross validation or not. Defaults to False.
+    """
     dd=pd.melt(df,id_vars=['size'],value_vars=myfeatures,var_name='features')
     sns.set(rc={'figure.figsize':(11.7,8.27)})
     ax = sns.boxplot(x='size',y='value',data=dd,hue='features')
@@ -263,6 +404,14 @@ def plot_shap_box_plots(df, title, myfeatures, iscv=False):
     plt.show()
     
 def plot_shap_bar_plots(df, title, myfeatures, iscv = False):
+    """function to plot bar plots of mean absolute shap values
+
+    Args:
+        df 
+        title (sring): title of the plot
+        myfeatures : feature list
+        iscv (bool, optional): cross validation or not. Defaults to False.
+    """
     dd1 = pd.melt(df,id_vars=['size'],value_vars=myfeatures,var_name='features')
     sns.set(rc={'figure.figsize':(11.7,8.27)})
     ax = sns.barplot(x='size',y='value',data = dd1,hue='features')
@@ -277,6 +426,16 @@ def plot_shap_bar_plots(df, title, myfeatures, iscv = False):
     return dd1
 
 def plot_shap_box_plots_axis(ax, df, title, myfeatures, custom_colors, iscv=False):
+    """function to plot box plots of mean absolute shap values, to use in paper 
+
+    Args:
+        ax : axis
+        df : data
+        title (sring): title of the plot
+        myfeatures : feature list
+        custom_colors : plot colors
+        iscv (bool, optional): cross validation or not. Defaults to False.
+    """
     dd = pd.melt(df, id_vars=['size'], value_vars=myfeatures, var_name='features')
     sns.boxplot(x='size', y='value', data=dd, hue='features', ax=ax, palette=custom_colors)
     ax.get_legend().remove()
@@ -297,6 +456,16 @@ def plot_shap_box_plots_axis(ax, df, title, myfeatures, custom_colors, iscv=Fals
     ax.spines['right'].set_visible(False)
     
 def plot_shap_bar_plots_axis(ax, df, title, myfeatures, custom_colors, iscv=False):
+    """function to plot bar plots of mean absolute shap values, to use in paper 
+
+    Args:
+        ax : axis
+        df : data
+        title (sring): title of the plot
+        myfeatures : feature list
+        custom_colors : plot colors
+        iscv (bool, optional): cross validation or not. Defaults to False.
+    """
     dd1 = pd.melt(df, id_vars=['size'], value_vars=myfeatures, var_name='features')
     sns.barplot(x='size', y='value', data=dd1, hue='features', ax=ax, palette=custom_colors)
     ax.get_legend().remove()
@@ -330,6 +499,16 @@ def log_min_max_normalization(group):
     return group
 
 def plot_combined_graphs(models, df_fi, saveFile, myfeatures, custom_colors, iscv=False):
+    """function to combine bar and box plots 
+
+    Args:
+        models 
+        df_fi : data
+        saveFile : figure name
+        myfeatures : feature list
+        custom_colors : plot colors
+        iscv (bool, optional): used cross validation or not. Defaults to False.
+    """
     fig, axes = plt.subplots(1, 3, figsize=(18, 6))
 
     i = 0
